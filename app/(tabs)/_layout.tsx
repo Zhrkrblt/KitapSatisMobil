@@ -1,6 +1,6 @@
-import { Tabs } from 'expo-router';
 import React from 'react';
-import { Text } from 'react-native';
+import { Tabs } from 'expo-router';
+import { FontAwesome } from '@expo/vector-icons';
 
 // import { HapticTab } from '@/components/HapticTab';
 // import { IconSymbol } from '@/components/ui/IconSymbol';
@@ -14,16 +14,20 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: 'blue',
-        tabBarInactiveTintColor: 'gray',
-        headerShown: false,
+        tabBarActiveTintColor: '#2ecc71',
+        tabBarInactiveTintColor: '#666',
+        tabBarStyle: {
+          backgroundColor: '#fff',
+          borderTopWidth: 1,
+          borderTopColor: '#eee',
+        },
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Anasayfa',
-          tabBarIcon: ({ color, focused }) => (
-            <Text style={{ color: color }}>🏠</Text>
+          title: 'Ana Sayfa',
+          tabBarIcon: ({ color }) => (
+            <FontAwesome name="home" size={24} color={color} />
           ),
         }}
       />
@@ -41,9 +45,18 @@ export default function TabLayout() {
       <Tabs.Screen
         name="cart"
         options={{
-          title: 'Sepet',
-          tabBarIcon: ({ color, focused }) => (
-            <Text style={{ color: color }}>🛒</Text>
+          title: 'Sepetim',
+          tabBarIcon: ({ color }) => (
+            <FontAwesome name="shopping-cart" size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profil',
+          tabBarIcon: ({ color }) => (
+            <FontAwesome name="user" size={24} color={color} />
           ),
         }}
       />

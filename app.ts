@@ -1,18 +1,23 @@
 import express from 'express';
-import { testConnection } from './routes/test';
+import mongoose from 'mongoose';
+import cors from 'cors';
 import { getBooks } from './routes/books';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
+// MongoDB bağlantısı
+mongoose.connect('mongodb+srv://zehra:zehra23@zehra.rjgiqze.mongodb.net/kitap_veritabani?retryWrites=true&w=majority&appName=zehra')
+  .then(() => console.log('MongoDB bağlantısı başarılı'))
+  .catch(err => console.error('MongoDB bağlantı hatası:', err));
+
+// Middleware
+app.use(cors());
 app.use(express.json());
 
-// Test route'u
-app.get('/api/test-connection', testConnection);
-
-// Kitapları getir
+// Routes
 app.get('/api/books', getBooks);
 
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server ${PORT} portunda çalışıyor`);
 }); 
