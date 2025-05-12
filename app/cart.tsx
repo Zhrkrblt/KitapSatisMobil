@@ -6,204 +6,277 @@ import {
   FlatList,
   TouchableOpacity,
   Image,
-  SafeAreaView,
+  Alert,
 } from 'react-native';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
+import { useCart } from './context/CartContext';
 import { Book } from './types';
 
-const DUMMY_CART_ITEMS: Book[] = [
-  {
-    id: '1',
-    title: 'Suç ve Ceza',
-    author: 'Fyodor Dostoyevski',
-    price: '89.99',
-    quantity: 1,
-    image: null,
-  },
-  {
-    id: '2',
-    title: '1984',
-    author: 'George Orwell',
-    price: '69.99',
-    quantity: 2,
-    image: null,
-  },
-];
+interface CartItem extends Book {
+  quantity: number;
+}
 
 export default function CartScreen() {
-  const calculateTotal = () => {
-    return DUMMY_CART_ITEMS.reduce(
-      (total, item) => total + parseFloat(item.price) * (item.quantity || 0),
-      0
-    ).toFixed(2);
+  const router = useRouter();
+  const { cartItems, removeFromCart, updateQuantity, getTotalPrice, clearCart } = useCart();
+
+  const handleCheckout = () => {
+    if (cartItems.length === 0) {
+      Alert.alert('Uyarı', 'Sepetiniz boş!');
+      return;
+    }
+    router.push('/payment');
   };
 
-  const renderCartItem = ({ item }: { item: Book }) => (
+  const renderCartItem = ({ item }: { item: CartItem }) => (
     <View style={styles.cartItem}>
-      <View style={styles.itemInfo}>
-        <Text style={styles.bookTitle}>{item.title}</Text>
-        <Text style={styles.bookAuthor}>{item.author}</Text>
-        <Text style={styles.bookPrice}>{item.price} TL</Text>
+      <Image
+        source={{ uri: item.resimUrl || 'https://via.placeholder.com/150x200?text=Kitap' }}
+        style={styles.bookImage}
+      />
+      <View style={styles.itemDetails}>
+        <Text style={styles.bookTitle}>{item.baslik}</Text>
+        <Text style={styles.bookAuthor}>{item.yazar}</Text>
+        <Text style={styles.bookPrice}>{item.fiyat} TL</Text>
+        
         <View style={styles.quantityContainer}>
-          <TouchableOpacity style={styles.quantityButton}>
+          <TouchableOpacity
+            style={styles.quantityButton}
+            onPress={() => updateQuantity(item._id, item.quantity - 1)}
+          >
             <Text style={styles.quantityButtonText}>-</Text>
           </TouchableOpacity>
+          
           <Text style={styles.quantity}>{item.quantity}</Text>
-          <TouchableOpacity style={styles.quantityButton}>
+          
+          <TouchableOpacity
+            style={styles.quantityButton}
+            onPress={() => updateQuantity(item._id, item.quantity + 1)}
+          >
             <Text style={styles.quantityButtonText}>+</Text>
           </TouchableOpacity>
         </View>
       </View>
+      
+      <TouchableOpacity
+        style={styles.removeButton}
+        onPress={() => removeFromCart(item._id)}
+      >
+        <Text style={styles.removeButtonText}>Kaldır</Text>
+      </TouchableOpacity>
     </View>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Text style={styles.backButtonText}>←</Text>
+          <Text style={styles.backButtonText}>← Geri</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Sepetim</Text>
+        {cartItems.length > 0 && (
+          <TouchableOpacity
+            style={styles.clearButton}
+            onPress={() => {
+              Alert.alert(
+                'Sepeti Temizle',
+                'Sepetinizdeki tüm ürünler kaldırılacak. Emin misiniz?',
+                [
+                  { text: 'İptal', style: 'cancel' },
+                  { text: 'Temizle', onPress: clearCart, style: 'destructive' }
+                ]
+              );
+            }}
+          >
+            <Text style={styles.clearButtonText}>Sepeti Temizle</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
-      <FlatList
-        data={DUMMY_CART_ITEMS}
-        renderItem={renderCartItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.cartList}
-        showsVerticalScrollIndicator={false}
-      />
-
-      <View style={styles.footer}>
-        <View style={styles.totalContainer}>
-          <Text style={styles.totalLabel}>Toplam:</Text>
-          <Text style={styles.totalAmount}>{calculateTotal()} TL</Text>
+      {cartItems.length === 0 ? (
+        <View style={styles.emptyCart}>
+          <Text style={styles.emptyCartText}>Sepetiniz boş</Text>
+          <TouchableOpacity
+            style={styles.continueShoppingButton}
+            onPress={() => router.push('/home')}
+          >
+            <Text style={styles.continueShoppingButtonText}>Alışverişe Devam Et</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity 
-          style={styles.checkoutButton}
-          onPress={() => router.push('/payment' as any)}
-        >
-          <Text style={styles.checkoutButtonText}>Siparişi Tamamla</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+      ) : (
+        <>
+          <FlatList
+            data={cartItems}
+            renderItem={renderCartItem}
+            keyExtractor={(item) => item._id}
+            contentContainerStyle={styles.cartList}
+          />
+          
+          <View style={styles.footer}>
+            <View style={styles.totalContainer}>
+              <Text style={styles.totalText}>Toplam Tutar:</Text>
+              <Text style={styles.totalPrice}>{getTotalPrice().toFixed(2)} TL</Text>
+            </View>
+            
+            <TouchableOpacity
+              style={styles.checkoutButton}
+              onPress={handleCheckout}
+            >
+              <Text style={styles.checkoutButtonText}>Ödemeye Geç</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#007AFF',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
   backButton: {
-    marginRight: 20,
+    padding: 8,
   },
   backButtonText: {
-    color: '#fff',
-    fontSize: 24,
+    fontSize: 16,
+    color: '#007AFF',
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
+  },
+  clearButton: {
+    padding: 8,
+  },
+  clearButtonText: {
+    color: '#FF3B30',
+    fontSize: 14,
   },
   cartList: {
-    padding: 15,
+    padding: 16,
   },
   cartItem: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    marginBottom: 15,
-    padding: 10,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    marginBottom: 16,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 8,
+    padding: 12,
   },
-  itemInfo: {
+  bookImage: {
+    width: 80,
+    height: 120,
+    borderRadius: 4,
+  },
+  itemDetails: {
     flex: 1,
-    marginLeft: 15,
+    marginLeft: 12,
   },
   bookTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 5,
-    color: '#333',
+    marginBottom: 4,
   },
   bookAuthor: {
     fontSize: 14,
     color: '#666',
-    marginBottom: 5,
+    marginBottom: 4,
   },
   bookPrice: {
     fontSize: 16,
     color: '#007AFF',
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   quantityButton: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#007AFF',
     width: 30,
     height: 30,
     borderRadius: 15,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   quantityButtonText: {
+    color: '#fff',
     fontSize: 18,
-    color: '#333',
+    fontWeight: 'bold',
   },
   quantity: {
-    marginHorizontal: 15,
+    marginHorizontal: 12,
     fontSize: 16,
-    color: '#333',
+  },
+  removeButton: {
+    padding: 8,
+  },
+  removeButtonText: {
+    color: '#FF3B30',
+    fontSize: 14,
   },
   footer: {
-    padding: 20,
-    backgroundColor: '#fff',
+    padding: 16,
     borderTopWidth: 1,
     borderTopColor: '#eee',
+    backgroundColor: '#fff',
   },
   totalContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    alignItems: 'center',
+    marginBottom: 16,
   },
-  totalLabel: {
+  totalText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
   },
-  totalAmount: {
-    fontSize: 18,
+  totalPrice: {
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#007AFF',
   },
   checkoutButton: {
     backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 10,
+    padding: 16,
+    borderRadius: 8,
     alignItems: 'center',
   },
   checkoutButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  emptyCart: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  emptyCartText: {
+    fontSize: 18,
+    color: '#666',
+    marginBottom: 16,
+  },
+  continueShoppingButton: {
+    backgroundColor: '#007AFF',
+    padding: 16,
+    borderRadius: 8,
+  },
+  continueShoppingButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',

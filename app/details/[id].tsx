@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator, ScrollView, Alert } from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Book } from '../types';
 import { fetchBookById } from '../services/api';
+import { useCart } from '../context/CartContext';
 
 export default function BookDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const { addToCart } = useCart();
 
   useEffect(() => {
     loadBookDetails();
@@ -29,8 +32,10 @@ export default function BookDetailScreen() {
   };
 
   const handleAddToCart = () => {
-    // Sepete ekleme işlemi burada yapılacak
-    Alert.alert('Sepete Eklendi', `${book?.baslik} sepete eklendi.`);
+    if (book) {
+      addToCart(book);
+      Alert.alert('Başarılı', 'Kitap sepete eklendi!');
+    }
   };
 
   if (loading) {
